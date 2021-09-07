@@ -4,10 +4,12 @@
             [clojask.clojask-groupby :as groupby]
             [clojask.clojask-join :as join]
             [onyx.api :refer :all]
+            [clojure.set :as set]
             [clojure.string :as string]
             [onyx.test-helper :refer [with-test-env feedback-exception!]]
             [tech.v3.dataset :as ds]
             [clojure.data.csv :as csv]
+            [clojask.groupby :refer [gen-groupby-filenames]]
             [clojask.utils :refer [eval-res eval-res-ne filter-check]])
   (:import (java.io BufferedReader FileReader BufferedWriter FileWriter)))
 
@@ -84,6 +86,40 @@
             {:data (mapv (fn [_] (eval-res-ne data types operations _)) indices)}
             {})))))
   )
+
+(defn worker-func-groupby
+  [df exception]
+  (reset! dataframe df)
+  (let [operations (.getDesc (:col-info (deref dataframe)))
+        types (.getType (:col-info (deref dataframe)))
+        filters (.getFilters (:row-info df))
+        indices (vec (take (count operations) (iterate inc 0)))
+        groupby-keys (.getGroupbyKeys (:row-info df))
+        dist "_clojask/grouped/"
+        formatters (.getFormatter (.col-info df))
+        key-index (.getKeyIndex (.col-info df))
+        formatters (set/rename-keys formatters key-index)]
+    (if exception
+      (defn worker-func
+        [seg]
+        (let [data (string/split (:data seg) #"," -1)] ;; -1 is very important here!
+        ;; (doseq [index (take (count operations) (iterate inc 0))]
+        ;;   )
+        ;; (spit "resources/debug.txt" (str seg "\n") :append true)
+        ;; (spit "resources/debug.txt" (str types) :append true)
+        ;; (spit "resources/debug.txt" (str operations) :append true)
+        ;; (spit "resources/debug.txt" index :append true)
+          (if (filter-check filters types data)
+            (let [data (mapv (fn [_] (eval-res data types operations _)) indices)]
+              {:data data :f (gen-groupby-filenames dist data groupby-keys nil formatters)})
+            {})))
+      (defn worker-func
+        [seg]
+        (let [data (string/split (:data seg) #"," -1)]
+          (if (filter-check filters types data)
+            (let [data (mapv (fn [_] (eval-res-ne data types operations _)) indices)]
+              {:data data :f (gen-groupby-filenames dist data groupby-keys nil formatters)})
+            {}))))))
 
 (defn catalog-gen
   "Generate the catalog for running Onyx"
@@ -439,7 +475,7 @@
   (try
     (workflow-gen num-work)
     (config-env)
-    (worker-func-gen dataframe exception) ;;need some work
+    (worker-func-groupby dataframe exception) ;;need some work
     (catalog-aggre-gen num-work batch-size)
     (lifecycle-aggre-gen (.path dataframe) dist groupby-keys (.getKeyIndex (.col-info dataframe)))
     (flow-cond-gen num-work)

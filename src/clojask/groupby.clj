@@ -50,7 +50,9 @@
   ;; key-index contains the one to one correspondence of key value to index value, it is a map
   ;; eg "Salary" -> 3
   ;; (spit "resources/debug.txt" (str msg "\n" key-index) :append true)
-  (let [output-filename (gen-groupby-filenames dist msg groupby-keys key-index formatter) ;; generate output filename
+  (let [output-filename (:f msg)
+        msg (:data msg)
+        ;; output-filename (gen-groupby-filenames dist msg groupby-keys key-index formatter) ;; generate output filename
         groupby-wrtr (io/writer output-filename :append true)]
     ;; write as maps e.g. {:name "Tim", :salary 62, :tax 0.1, :bonus 12}
     (.write groupby-wrtr (str msg "\n"))

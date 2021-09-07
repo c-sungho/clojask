@@ -86,7 +86,7 @@
                 ;(.write wtr (str msg "\n"))
                 ;; !! define argument (debug)
             ;;   (def groupby-keys [:Department :EmployeeName])
-              (output-groupby dist (:data msg) groupby-keys key-index formatter)))
+              (output-groupby dist msg groupby-keys key-index formatter)))
 
           (recur (rest batch)))))
     true))
