@@ -20,15 +20,6 @@
   ;; outer loop is the input node
   (let [index-key (.getIndexKey (:col-info dataframe))
         formatters (.getFormatter (:col-info dataframe))
-        ;index (take (count index-key) (iterate inc 0))
-        ;; indices-deleted (.getDeletedCol (:col-info dataframe))
-        ;; indices-wo-del (vec (take (count index-key) (iterate inc 0)))
-        ;; indices-not-deleted (set/difference (set indices-wo-del) (set indices-deleted))
-        ;; index (if (empty? indices-deleted) 
-        ;;           indices-wo-del ;; no columns deleted
-        ;;           (filterv (fn [i] (contains? indices-not-deleted i)) indices-wo-del)
-        ;;           )
-        ;; header (mapv index-key index)    ;; the header of the result in sequence vector
         index (.getColIndex dataframe)
         header (.getColNames dataframe)
         reader (io/reader (:path dataframe))
